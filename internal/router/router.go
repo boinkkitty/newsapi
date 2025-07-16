@@ -11,10 +11,10 @@ func NewRouter(ns handler.NewsStorer) *http.ServeMux {
 
 	// Create routes
 	router.HandleFunc("POST /news", handler.PostNews(ns))
-	router.HandleFunc("GET /news", handler.GetAllNews())
-	router.HandleFunc("GET /news/{news_id}", handler.GetNewsByID())
-	router.HandleFunc("PUT /news/{news_id}", handler.UpdateNewsByID())
-	router.HandleFunc("DELETE /news/{news_id}", handler.DeleteNewsByID())
+	router.HandleFunc("GET /news", handler.GetAllNews(ns))
+	router.HandleFunc("GET /news/{news_id}", handler.GetNewsByID(ns))
+	router.HandleFunc("PUT /news/{news_id}", handler.UpdateNewsByID(ns))
+	router.HandleFunc("DELETE /news/{news_id}", handler.DeleteNewsByID(ns))
 
 	return router
 }

@@ -85,11 +85,18 @@ func Test_PostNews(t *testing.T) {
 func Test_GetAllNews(t *testing.T) {
 	testcases := []struct {
 		name           string
+		store          handler.NewsStorer
 		expectedStatus int
 	}{
 		{
-			name:           "not implemented",
-			expectedStatus: http.StatusNotImplemented,
+			name:           "db error",
+			store:          mockNewsStore{isExpectedError: true},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:           "success",
+			store:          mockNewsStore{},
+			expectedStatus: http.StatusOK,
 		},
 	}
 
@@ -100,7 +107,7 @@ func Test_GetAllNews(t *testing.T) {
 			response := httptest.NewRecorder()
 
 			// Post Method
-			handler.GetAllNews()(response, request)
+			handler.GetAllNews(tc.store)(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
@@ -111,11 +118,27 @@ func Test_GetAllNews(t *testing.T) {
 func Test_GetNewsByID(t *testing.T) {
 	testcases := []struct {
 		name           string
+		store          handler.NewsStorer
+		newsID         string
 		expectedStatus int
 	}{
 		{
-			name:           "not implemented",
-			expectedStatus: http.StatusNotImplemented,
+			name:           "invalid news id",
+			store:          mockNewsStore{},
+			newsID:         "invalid-uuid",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "not found",
+			store:          mockNewsStore{isExpectedError: true},
+			newsID:         uuid.NewString(),
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "success",
+			store:          mockNewsStore{},
+			newsID:         uuid.NewString(),
+			expectedStatus: http.StatusOK,
 		},
 	}
 
@@ -124,9 +147,10 @@ func Test_GetNewsByID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, "/", nil)
 			response := httptest.NewRecorder()
+			request.SetPathValue("news_id", tc.newsID)
 
 			// Post Method
-			handler.GetNewsByID()(response, request)
+			handler.GetNewsByID(tc.store)(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
@@ -137,22 +161,68 @@ func Test_GetNewsByID(t *testing.T) {
 func Test_UpdateNewsByID(t *testing.T) {
 	testcases := []struct {
 		name           string
+		body           io.Reader
+		store          handler.NewsStorer
+		newsID         string
 		expectedStatus int
 	}{
 		{
-			name:           "not implemented",
-			expectedStatus: http.StatusNotImplemented,
+			name:           "invalid request body json",
+			body:           strings.NewReader(`{`),
+			store:          mockNewsStore{},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "invalid request body",
+			body: strings.NewReader(`{
+				"id": "550e8400-e29b-41d4-a716-446655440000",
+				"author": "Jane Doe",
+				"title": "Go Makes Testing Easy",
+				"summary": "A short summary about Go testing",
+				"created_at": "2024-07-16T15:04:05Z",
+				"source": "https://example.com/go-testing"
+			}`),
+			store:          mockNewsStore{},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "db error",
+			body: strings.NewReader(`{
+				"id": "550e8400-e29b-41d4-a716-446655440000",
+				"author": "Jane Doe",
+				"title": "Go Makes Testing Easy",
+				"summary": "A short summary about Go testing",
+				"created_at": "2024-07-16T15:04:05Z",
+				"source": "https://example.com",
+				"tags": ["go", "testing", "development"]
+			}`),
+			store:          mockNewsStore{isExpectedError: true},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name: "success",
+			body: strings.NewReader(`{
+				"id": "550e8400-e29b-41d4-a716-446655440000",
+				"author": "Jane Doe",
+				"title": "Go Makes Testing Easy",
+				"summary": "A short summary about Go testing",
+				"created_at": "2024-07-16T15:04:05Z",
+				"source": "https://example.com",
+				"tags": ["go", "testing", "development"]
+			}`),
+			store:          mockNewsStore{},
+			expectedStatus: http.StatusOK,
 		},
 	}
 
 	// Iterate through test cases
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPut, "/", nil)
+			request := httptest.NewRequest(http.MethodPut, "/", tc.body)
 			response := httptest.NewRecorder()
 
 			// Post Method
-			handler.UpdateNewsByID()(response, request)
+			handler.UpdateNewsByID(tc.store)(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
@@ -163,11 +233,27 @@ func Test_UpdateNewsByID(t *testing.T) {
 func Test_DeleteNewsByID(t *testing.T) {
 	testcases := []struct {
 		name           string
+		store          handler.NewsStorer
+		newsID         string
 		expectedStatus int
 	}{
 		{
-			name:           "not implemented",
-			expectedStatus: http.StatusNotImplemented,
+			name:           "invalid news id",
+			store:          mockNewsStore{},
+			newsID:         "invalid-uuid",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "db error",
+			store:          mockNewsStore{isExpectedError: true},
+			newsID:         uuid.NewString(),
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:           "success",
+			store:          mockNewsStore{},
+			newsID:         uuid.NewString(),
+			expectedStatus: http.StatusNoContent,
 		},
 	}
 
@@ -176,9 +262,11 @@ func Test_DeleteNewsByID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodDelete, "/", nil)
 			response := httptest.NewRecorder()
+			// Set Id path value
+			request.SetPathValue("news_id", tc.newsID)
 
 			// Post Method
-			handler.DeleteNewsByID()(response, request)
+			handler.DeleteNewsByID(tc.store)(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
