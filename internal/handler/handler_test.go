@@ -3,6 +3,7 @@ package handler_test
 import (
 	"errors"
 	"github.com/boinkkitty/newsapi/internal/handler"
+	"github.com/boinkkitty/newsapi/internal/store"
 	"github.com/google/uuid"
 	"io"
 	"net/http"
@@ -286,21 +287,21 @@ type mockNewsStore struct {
 	isExpectedError bool
 }
 
-func (m mockNewsStore) Create(_ handler.NewsPostReqBody) (news handler.NewsPostReqBody, err error) {
+func (m mockNewsStore) Create(_ store.News) (news store.News, err error) {
 	if m.isExpectedError {
 		return news, errors.New("some error")
 	}
 	return news, nil
 }
 
-func (m mockNewsStore) FindByID(_ uuid.UUID) (news handler.NewsPostReqBody, err error) {
+func (m mockNewsStore) FindByID(_ uuid.UUID) (news store.News, err error) {
 	if m.isExpectedError {
 		return news, errors.New("some error")
 	}
 	return news, nil
 }
 
-func (m mockNewsStore) FindAll() (news []handler.NewsPostReqBody, err error) {
+func (m mockNewsStore) FindAll() (news []store.News, err error) {
 	if m.isExpectedError {
 		return news, errors.New("some error")
 	}
@@ -314,7 +315,7 @@ func (m mockNewsStore) DeleteByID(_ uuid.UUID) (err error) {
 	return nil
 }
 
-func (m mockNewsStore) UpdateByID(_ handler.NewsPostReqBody) (err error) {
+func (m mockNewsStore) UpdateByID(_ store.News) (err error) {
 	if m.isExpectedError {
 		return errors.New("some error")
 	}

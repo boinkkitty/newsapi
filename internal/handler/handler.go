@@ -3,16 +3,17 @@ package handler
 import (
 	"encoding/json"
 	"github.com/boinkkitty/newsapi/internal/logger"
+	"github.com/boinkkitty/newsapi/internal/store"
 	"github.com/google/uuid"
 	"net/http"
 )
 
 type NewsStorer interface {
-	Create(NewsPostReqBody) (NewsPostReqBody, error)
-	FindByID(uuid.UUID) (NewsPostReqBody, error)
-	FindAll() ([]NewsPostReqBody, error)
+	Create(store.News) (store.News, error)
+	FindByID(uuid.UUID) (store.News, error)
+	FindAll() ([]store.News, error)
 	DeleteByID(uuid.UUID) error
-	UpdateByID(body NewsPostReqBody) error
+	UpdateByID(body store.News) error
 }
 
 func PostNews(ns NewsStorer) http.HandlerFunc {
@@ -29,7 +30,8 @@ func PostNews(ns NewsStorer) http.HandlerFunc {
 		}
 
 		// Validate fields
-		if err := newsRequestBody.Validate(); err != nil {
+		news, err := newsRequestBody.Validate()
+		if err != nil {
 			logger.Error("request validation failed", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -37,7 +39,7 @@ func PostNews(ns NewsStorer) http.HandlerFunc {
 		}
 
 		// Create news in db
-		if _, err := ns.Create(newsRequestBody); err != nil {
+		if _, err := ns.Create(news); err != nil {
 			logger.Error("error creating news", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -114,7 +116,8 @@ func UpdateNewsByID(ns NewsStorer) http.HandlerFunc {
 		}
 
 		// Validate fields
-		if err := newsRequestBody.Validate(); err != nil {
+		news, err := newsRequestBody.Validate()
+		if err != nil {
 			logger.Error("request validation failed", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -122,7 +125,7 @@ func UpdateNewsByID(ns NewsStorer) http.HandlerFunc {
 		}
 
 		// Update By ID, will be provided in news request body itself
-		if err := ns.UpdateByID(newsRequestBody); err != nil {
+		if err := ns.UpdateByID(news); err != nil {
 			logger.Error("error updating news", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -153,8 +156,4 @@ func DeleteNewsByID(ns NewsStorer) http.HandlerFunc {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	}
-}
-
-type AllNewsResponse struct {
-	News []NewsPostReqBody `json:"news"`
 }

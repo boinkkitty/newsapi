@@ -74,7 +74,7 @@ func TestNewsPostReqBody_Validate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.req.Validate()
+			_, err := tc.req.Validate()
 
 			if tc.isExpectedError && err == nil {
 				t.Fatal("expected error but got nil")
