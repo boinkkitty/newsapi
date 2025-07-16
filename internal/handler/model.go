@@ -10,7 +10,7 @@ import (
 type NewsPostReqBody struct {
 	Author    string   `json:"author"`
 	Title     string   `json:"title"`
-	Summary   string   `json:"string"`
+	Summary   string   `json:"summary"`
 	CreatedAt string   `json:"created_at"`
 	Content   string   `json:"content"`
 	Source    string   `json:"source"`

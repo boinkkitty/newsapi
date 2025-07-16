@@ -1,31 +1,80 @@
 package handler_test
 
 import (
+	"errors"
 	"github.com/boinkkitty/newsapi/internal/handler"
+	"github.com/google/uuid"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
 func Test_PostNews(t *testing.T) {
 	testcases := []struct {
 		name           string
+		body           io.Reader
+		store          handler.NewsStorer
 		expectedStatus int
 	}{
 		{
-			name:           "not implemented",
-			expectedStatus: http.StatusNotImplemented,
+			name:           "invalid request body json",
+			body:           strings.NewReader(`{`),
+			store:          mockNewsStore{},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "invalid request body",
+			body: strings.NewReader(`{
+				"id": "550e8400-e29b-41d4-a716-446655440000",
+				"author": "Jane Doe",
+				"title": "Go Makes Testing Easy",
+				"summary": "A short summary about Go testing",
+				"created_at": "2024-07-16T15:04:05Z",
+				"source": "https://example.com/go-testing"
+			}`),
+			store:          mockNewsStore{isExpectedError: true},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "db error",
+			body: strings.NewReader(`{
+				"id": "550e8400-e29b-41d4-a716-446655440000",
+				"author": "Jane Doe",
+				"title": "Go Makes Testing Easy",
+				"summary": "A short summary about Go testing",
+				"created_at": "2024-07-16T15:04:05Z",
+				"source": "https://example.com",
+				"tags": ["go", "testing", "development"]
+			}`),
+			store:          mockNewsStore{isExpectedError: true},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name: "success",
+			body: strings.NewReader(`{
+				"id": "550e8400-e29b-41d4-a716-446655440000",
+				"author": "Jane Doe",
+				"title": "Go Makes Testing Easy",
+				"summary": "A short summary about Go testing",
+				"created_at": "2024-07-16T15:04:05Z",
+				"source": "https://example.com",
+				"tags": ["go", "testing", "development"]
+			}`),
+			store:          mockNewsStore{},
+			expectedStatus: http.StatusCreated,
 		},
 	}
 
 	// Iterate through test cases
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, "/", nil)
+			request := httptest.NewRequest(http.MethodPost, "/", tc.body)
 			response := httptest.NewRecorder()
 
 			// Post Method
-			handler.PostNews()(response, request)
+			handler.PostNews(tc.store)(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
@@ -143,4 +192,43 @@ func assertStatusCode(t testing.TB, got, want int) {
 	if got != want {
 		t.Errorf("got: %d, want: %d", got, want)
 	}
+}
+
+type mockNewsStore struct {
+	isExpectedError bool
+}
+
+func (m mockNewsStore) Create(_ handler.NewsPostReqBody) (news handler.NewsPostReqBody, err error) {
+	if m.isExpectedError {
+		return news, errors.New("some error")
+	}
+	return news, nil
+}
+
+func (m mockNewsStore) FindByID(_ uuid.UUID) (news handler.NewsPostReqBody, err error) {
+	if m.isExpectedError {
+		return news, errors.New("some error")
+	}
+	return news, nil
+}
+
+func (m mockNewsStore) FindAll() (news []handler.NewsPostReqBody, err error) {
+	if m.isExpectedError {
+		return news, errors.New("some error")
+	}
+	return news, nil
+}
+
+func (m mockNewsStore) DeleteByID(_ uuid.UUID) (err error) {
+	if m.isExpectedError {
+		return errors.New("some error")
+	}
+	return nil
+}
+
+func (m mockNewsStore) UpdateByID(_ handler.NewsPostReqBody) (err error) {
+	if m.isExpectedError {
+		return errors.New("some error")
+	}
+	return nil
 }
