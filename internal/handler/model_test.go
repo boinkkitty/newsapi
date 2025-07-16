@@ -2,86 +2,142 @@ package handler_test
 
 import (
 	"github.com/boinkkitty/newsapi/internal/handler"
+	"github.com/boinkkitty/newsapi/internal/store"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"net/url"
 	"testing"
+	"time"
 )
 
 func TestNewsPostReqBody_Validate(t *testing.T) {
+	type expectations struct {
+		err  string
+		news store.News
+	}
 	testCases := []struct {
-		name            string
-		req             handler.NewsPostReqBody
-		isExpectedError bool
+		name         string
+		req          handler.NewsPostReqBody
+		expectations expectations
 	}{
 		{
-			name:            "author empty",
-			req:             handler.NewsPostReqBody{},
-			isExpectedError: true,
+			name: "author empty",
+			req:  handler.NewsPostReqBody{},
+			expectations: expectations{
+				err: "author is empty",
+			},
 		},
 		{
-			name:            "title empty",
-			req:             handler.NewsPostReqBody{Author: "Alice"},
-			isExpectedError: true,
+			name: "title empty",
+			req:  handler.NewsPostReqBody{Author: "Alice"},
+			expectations: expectations{
+				err: "title is empty",
+			},
 		},
 		{
-			name: "summary empty",
+			name: "content empty",
 			req: handler.NewsPostReqBody{
 				Author: "Alice",
 				Title:  "Some Title",
 			},
-			isExpectedError: true,
+			expectations: expectations{
+				err: "content is empty",
+			},
+		},
+		{
+			name: "summary empty",
+			req: handler.NewsPostReqBody{
+				Author:  "Alice",
+				Title:   "Some Title",
+				Content: "Some Content",
+			},
+			expectations: expectations{
+				err: "summary is empty",
+			},
 		},
 		{
 			name: "time invalid",
 			req: handler.NewsPostReqBody{
-				Author:  "Alice",
-				Title:   "Some Title",
-				Summary: "Some summary",
+				Author:    "Alice",
+				Title:     "Some Title",
+				Content:   "Some Content",
+				Summary:   "Some summary",
+				CreatedAt: "invalid time",
 			},
-			isExpectedError: true,
+			expectations: expectations{
+				err: `parsing time "invalid time"`,
+			},
 		},
 		{
 			name: "source invalid",
 			req: handler.NewsPostReqBody{
 				Author:    "Alice",
 				Title:     "Some Title",
+				Content:   "Some Content",
 				Summary:   "Some summary",
-				CreatedAt: "invalid time",
+				CreatedAt: "2023-01-01T00:00:00Z",
 			},
-			isExpectedError: true,
+			expectations: expectations{
+				err: "source is empty",
+			},
 		},
 		{
 			name: "tags empty",
 			req: handler.NewsPostReqBody{
 				Author:    "Alice",
 				Title:     "Some Title",
+				Content:   "Some Content",
 				Summary:   "Some summary",
 				CreatedAt: "2023-01-01T00:00:00Z",
 				Source:    "https://example.com",
 			},
-			isExpectedError: true,
+			expectations: expectations{
+				err: "tags cannot be empty",
+			},
 		},
 		{
 			name: "validate",
 			req: handler.NewsPostReqBody{
 				Author:    "Alice",
 				Title:     "Some Title",
+				Content:   "Some Content",
 				Summary:   "Some summary",
 				CreatedAt: "2023-01-01T00:00:00Z",
 				Source:    "https://example.com",
 				Tags:      []string{"go", "news"},
+			},
+			expectations: expectations{
+				news: store.News{
+					Author:  "Alice",
+					Title:   "Some Title",
+					Content: "Some Content",
+					Summary: "Some summary",
+					Tags:    []string{"go", "news"},
+				},
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := tc.req.Validate()
+			news, err := tc.req.Validate()
 
-			if tc.isExpectedError && err == nil {
-				t.Fatal("expected error but got nil")
-			}
+			if tc.expectations.err != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectations.err)
+			} else {
+				assert.NoError(t, err)
 
-			if !tc.isExpectedError && err != nil {
-				t.Fatalf("expected nil but got error: %v", err)
+				// Check time
+				parseTime, parseErr := time.Parse(time.RFC3339, tc.req.CreatedAt)
+				require.NoError(t, parseErr)
+				tc.expectations.news.CreatedAt = parseTime
+
+				// Check url
+				parseSource, parseSourceErr := url.Parse(tc.req.Source)
+				require.NoError(t, parseSourceErr)
+				tc.expectations.news.Source = parseSource
+				assert.Equal(t, tc.expectations.news, news)
 			}
 		})
 	}
