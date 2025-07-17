@@ -46,4 +46,6 @@ func NewDB(c *Config) (*bun.DB, error) {
 	if c.Debug {
 		db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
 	}
+
+	return db, nil
 }
