@@ -3,6 +3,7 @@ package news_test
 import (
 	"context"
 	"fmt"
+	"github.com/boinkkitty/newsapi/internal/news"
 	"github.com/boinkkitty/newsapi/internal/postgres"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
@@ -10,8 +11,33 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/uptrace/bun"
 	"os"
+	"path/filepath"
+	"testing"
 	"time"
 )
+
+var db *bun.DB
+
+func TestMain(m *testing.M) {
+	ctx := context.Background()
+	pdb, cf, err := createTestDB(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	db = pdb
+	code := m.Run()
+
+	if err := cf(ctx); err != nil {
+		panic(err)
+	}
+
+	os.Exit(code)
+}
+
+func TestStore_Create(t *testing.T) {
+	news.NewStore(db)
+}
 
 func createTestContainer(ctx context.Context) (ctr *pgtc.PostgresContainer, err error) {
 	wd, err := os.Getwd()
@@ -19,7 +45,7 @@ func createTestContainer(ctx context.Context) (ctr *pgtc.PostgresContainer, err 
 		return ctr, fmt.Errorf("working directory: %w", err)
 	}
 
-	sqlScripts := wd + "/testdata/sql/store.sql"
+	sqlScripts := filepath.Join(wd, "testdata", "sql", "store.sql")
 
 	ctr, err = pgtc.Run(
 		ctx,
@@ -31,7 +57,7 @@ func createTestContainer(ctx context.Context) (ctr *pgtc.PostgresContainer, err 
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
-				WithStartupTimeout(30*time.Second),
+				WithStartupTimeout(15*time.Second),
 		),
 	)
 
