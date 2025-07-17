@@ -23,7 +23,7 @@ func createTestContainer(ctx context.Context) (ctr *pgtc.PostgresContainer, err 
 
 	ctr, err = pgtc.Run(
 		ctx,
-		"postgresL16-alpine",
+		"postgres:16-alpine",
 		pgtc.WithInitScripts(sqlScripts),
 		pgtc.WithDatabase("postgres"),
 		pgtc.WithUsername("postgres"),
