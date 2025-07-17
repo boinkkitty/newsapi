@@ -45,6 +45,7 @@ func PostNews(ns NewsStorer) http.HandlerFunc {
 			return
 		}
 
+		// To add back response
 		w.WriteHeader(http.StatusCreated)
 	}
 }
