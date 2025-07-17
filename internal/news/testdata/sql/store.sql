@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS news (
 
 INSERT INTO news(id, author, title, summary, content, source, tags, created_at, updated_at)
 VALUES(
-    uuid_generate_v4(),
+    '17628bea-9d11-47f9-986e-16703a87e451',
     'Alice Smith',
     'PostgreSQL 16 Released',
     'What''s new in PostgreSQL 16?',
@@ -27,7 +27,7 @@ VALUES(
 );
 INSERT INTO news(id, author, title, summary, content, source, tags, created_at, updated_at)
 VALUES(
-    uuid_generate_v4(),
+          'bde0c593-0df6-4eba-9326-3f00be67aade',
     'Bob Lee',
     'Understanding UUIDs in Databases',
     'Why UUIDs are useful for distributed systems.',
@@ -41,7 +41,7 @@ VALUES(
 INSERT INTO news (
     id, author, title, summary, content, source, tags, created_at, updated_at, deleted_at
 ) VALUES (
-     uuid_generate_v4(),
+     'f710bc79-9ad3-4e0f-8dab-e43d94b42fbb',
      'Jane Doe',
      'Go Makes Testing Easy',
      'A short summary about Go testing',
