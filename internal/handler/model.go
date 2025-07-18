@@ -66,5 +66,5 @@ func (n NewsPostReqBody) Validate() (news store.News, errs error) {
 }
 
 type AllNewsResponse struct {
-	News []store.News `json:"news"`
+	News []*store.News `json:"news"`
 }

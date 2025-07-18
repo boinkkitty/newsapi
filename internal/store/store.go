@@ -9,16 +9,16 @@ import (
 
 type Store struct {
 	mu sync.Mutex
-	n  []News
+	n  []*News
 }
 
 func New() *Store {
 	return &Store{
-		n: []News{},
+		n: []*News{},
 	}
 }
 
-func (s *Store) Create(news News) (News, error) {
+func (s *Store) Create(news *News) (*News, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -27,14 +27,14 @@ func (s *Store) Create(news News) (News, error) {
 	return news, nil
 }
 
-func (s *Store) FindAll() ([]News, error) {
+func (s *Store) FindAll() ([]*News, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	return s.n, nil
 }
 
-func (s *Store) FindByID(id uuid.UUID) (News, error) {
+func (s *Store) FindByID(id uuid.UUID) (*News, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -44,7 +44,7 @@ func (s *Store) FindByID(id uuid.UUID) (News, error) {
 		}
 	}
 
-	return News{}, errors.New("news not found")
+	return nil, errors.New("news not found")
 }
 
 func (s *Store) DeleteByID(id uuid.UUID) error {
@@ -68,7 +68,7 @@ func (s *Store) DeleteByID(id uuid.UUID) error {
 	return nil
 }
 
-func (s *Store) UpdateByID(news News) error {
+func (s *Store) UpdateByID(news *News) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

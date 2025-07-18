@@ -108,17 +108,27 @@ func Test_PostNews(t *testing.T) {
 func Test_GetAllNews(t *testing.T) {
 	testcases := []struct {
 		name           string
-		store          handler.NewsStorer
+		setup          func(tb testing.TB) handler.NewsStorer
 		expectedStatus int
 	}{
 		{
-			name:           "db error",
-			store:          mockNewsStore{isExpectedError: true},
+			name: "db error",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().FindAll().Return(nil, errors.New("db error"))
+				return ms
+			},
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
-			name:           "success",
-			store:          mockNewsStore{},
+			name: "success",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().FindAll().Return(nil, nil)
+				return ms
+			},
 			expectedStatus: http.StatusOK,
 		},
 	}
@@ -130,7 +140,7 @@ func Test_GetAllNews(t *testing.T) {
 			response := httptest.NewRecorder()
 
 			// Post Method
-			handler.GetAllNews(tc.store)(response, request)
+			handler.GetAllNews(tc.setup(t))(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
@@ -141,25 +151,38 @@ func Test_GetAllNews(t *testing.T) {
 func Test_GetNewsByID(t *testing.T) {
 	testcases := []struct {
 		name           string
-		store          handler.NewsStorer
+		setup          func(tb testing.TB) handler.NewsStorer
 		newsID         string
 		expectedStatus int
 	}{
 		{
-			name:           "invalid news id",
-			store:          mockNewsStore{},
+			name: "invalid news id",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				return mockshandler.NewMockNewsStorer(gomock.NewController(t))
+			},
 			newsID:         "invalid-uuid",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "not found",
-			store:          mockNewsStore{isExpectedError: true},
+			name: "not found",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().FindByID(gomock.Any()).Return(nil, errors.New("db error"))
+				return ms
+			},
 			newsID:         uuid.NewString(),
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:           "success",
-			store:          mockNewsStore{},
+			name: "success",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().FindByID(gomock.Any()).Return(nil, nil)
+				return ms
+			},
 			newsID:         uuid.NewString(),
 			expectedStatus: http.StatusOK,
 		},
@@ -173,7 +196,7 @@ func Test_GetNewsByID(t *testing.T) {
 			request.SetPathValue("news_id", tc.newsID)
 
 			// Post Method
-			handler.GetNewsByID(tc.store)(response, request)
+			handler.GetNewsByID(tc.setup(t))(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
@@ -185,14 +208,17 @@ func Test_UpdateNewsByID(t *testing.T) {
 	testcases := []struct {
 		name           string
 		body           io.Reader
-		store          handler.NewsStorer
+		setup          func(tb testing.TB) handler.NewsStorer
 		newsID         string
 		expectedStatus int
 	}{
 		{
-			name:           "invalid request body json",
-			body:           strings.NewReader(`{`),
-			store:          mockNewsStore{},
+			name: "invalid request body json",
+			body: strings.NewReader(`{`),
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				return mockshandler.NewMockNewsStorer(gomock.NewController(t))
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -206,7 +232,10 @@ func Test_UpdateNewsByID(t *testing.T) {
 				"created_at": "2024-07-16T15:04:05Z",
 				"source": "https://example.com/go-testing"
 			}`),
-			store:          mockNewsStore{},
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				return mockshandler.NewMockNewsStorer(gomock.NewController(t))
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -221,7 +250,12 @@ func Test_UpdateNewsByID(t *testing.T) {
 				"source": "https://example.com",
 				"tags": ["go", "testing", "development"]
 			}`),
-			store:          mockNewsStore{isExpectedError: true},
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().UpdateByID(gomock.Any()).Return(errors.New("db error"))
+				return ms
+			},
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
@@ -236,7 +270,12 @@ func Test_UpdateNewsByID(t *testing.T) {
 				"source": "https://example.com",
 				"tags": ["go", "testing", "development"]
 			}`),
-			store:          mockNewsStore{},
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().UpdateByID(gomock.Any()).Return(nil)
+				return ms
+			},
 			expectedStatus: http.StatusOK,
 		},
 	}
@@ -248,7 +287,7 @@ func Test_UpdateNewsByID(t *testing.T) {
 			response := httptest.NewRecorder()
 
 			// Post Method
-			handler.UpdateNewsByID(tc.store)(response, request)
+			handler.UpdateNewsByID(tc.setup(t))(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
@@ -259,25 +298,38 @@ func Test_UpdateNewsByID(t *testing.T) {
 func Test_DeleteNewsByID(t *testing.T) {
 	testcases := []struct {
 		name           string
-		store          handler.NewsStorer
+		setup          func(tb testing.TB) handler.NewsStorer
 		newsID         string
 		expectedStatus int
 	}{
 		{
-			name:           "invalid news id",
-			store:          mockNewsStore{},
+			name: "invalid news id",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				return mockshandler.NewMockNewsStorer(gomock.NewController(t))
+			},
 			newsID:         "invalid-uuid",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "db error",
-			store:          mockNewsStore{isExpectedError: true},
+			name: "db error",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().DeleteByID(gomock.Any()).Return(errors.New("db error"))
+				return ms
+			},
 			newsID:         uuid.NewString(),
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
-			name:           "success",
-			store:          mockNewsStore{},
+			name: "success",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().DeleteByID(gomock.Any()).Return(nil)
+				return ms
+			},
 			newsID:         uuid.NewString(),
 			expectedStatus: http.StatusNoContent,
 		},
@@ -292,7 +344,7 @@ func Test_DeleteNewsByID(t *testing.T) {
 			request.SetPathValue("news_id", tc.newsID)
 
 			// Post Method
-			handler.DeleteNewsByID(tc.store)(response, request)
+			handler.DeleteNewsByID(tc.setup(t))(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
@@ -312,21 +364,21 @@ type mockNewsStore struct {
 	isExpectedError bool
 }
 
-func (m mockNewsStore) Create(_ store.News) (news store.News, err error) {
+func (m mockNewsStore) Create(_ *store.News) (news *store.News, err error) {
 	if m.isExpectedError {
 		return news, errors.New("some error")
 	}
 	return news, nil
 }
 
-func (m mockNewsStore) FindByID(_ uuid.UUID) (news store.News, err error) {
+func (m mockNewsStore) FindByID(_ uuid.UUID) (news *store.News, err error) {
 	if m.isExpectedError {
 		return news, errors.New("some error")
 	}
 	return news, nil
 }
 
-func (m mockNewsStore) FindAll() (news []store.News, err error) {
+func (m mockNewsStore) FindAll() (news []*store.News, err error) {
 	if m.isExpectedError {
 		return news, errors.New("some error")
 	}
@@ -340,7 +392,7 @@ func (m mockNewsStore) DeleteByID(_ uuid.UUID) (err error) {
 	return nil
 }
 
-func (m mockNewsStore) UpdateByID(_ store.News) (err error) {
+func (m mockNewsStore) UpdateByID(_ *store.News) (err error) {
 	if m.isExpectedError {
 		return errors.New("some error")
 	}

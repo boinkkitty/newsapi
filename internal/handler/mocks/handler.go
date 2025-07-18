@@ -42,10 +42,10 @@ func (m *MockNewsStorer) EXPECT() *MockNewsStorerMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockNewsStorer) Create(arg0 store.News) (store.News, error) {
+func (m *MockNewsStorer) Create(arg0 *store.News) (*store.News, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0)
-	ret0, _ := ret[0].(store.News)
+	ret0, _ := ret[0].(*store.News)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -71,10 +71,10 @@ func (mr *MockNewsStorerMockRecorder) DeleteByID(arg0 any) *gomock.Call {
 }
 
 // FindAll mocks base method.
-func (m *MockNewsStorer) FindAll() ([]store.News, error) {
+func (m *MockNewsStorer) FindAll() ([]*store.News, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll")
-	ret0, _ := ret[0].([]store.News)
+	ret0, _ := ret[0].([]*store.News)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -86,10 +86,10 @@ func (mr *MockNewsStorerMockRecorder) FindAll() *gomock.Call {
 }
 
 // FindByID mocks base method.
-func (m *MockNewsStorer) FindByID(arg0 uuid.UUID) (store.News, error) {
+func (m *MockNewsStorer) FindByID(arg0 uuid.UUID) (*store.News, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByID", arg0)
-	ret0, _ := ret[0].(store.News)
+	ret0, _ := ret[0].(*store.News)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -101,7 +101,7 @@ func (mr *MockNewsStorerMockRecorder) FindByID(arg0 any) *gomock.Call {
 }
 
 // UpdateByID mocks base method.
-func (m *MockNewsStorer) UpdateByID(body store.News) error {
+func (m *MockNewsStorer) UpdateByID(body *store.News) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateByID", body)
 	ret0, _ := ret[0].(error)

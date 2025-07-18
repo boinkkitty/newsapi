@@ -12,11 +12,11 @@ import (
 //go:generate mockgen -source=handler.go -destination=mocks/handler.go -package=mockshandler
 
 type NewsStorer interface {
-	Create(store.News) (store.News, error)
-	FindByID(uuid.UUID) (store.News, error)
-	FindAll() ([]store.News, error)
+	Create(*store.News) (*store.News, error)
+	FindByID(uuid.UUID) (*store.News, error)
+	FindAll() ([]*store.News, error)
 	DeleteByID(uuid.UUID) error
-	UpdateByID(body store.News) error
+	UpdateByID(body *store.News) error
 }
 
 func PostNews(ns NewsStorer) http.HandlerFunc {
@@ -42,7 +42,7 @@ func PostNews(ns NewsStorer) http.HandlerFunc {
 		}
 
 		// Create news in db
-		if _, err := ns.Create(news); err != nil {
+		if _, err := ns.Create(&news); err != nil {
 			logger.Error("error creating news", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -128,7 +128,7 @@ func UpdateNewsByID(ns NewsStorer) http.HandlerFunc {
 		}
 
 		// Update By ID, will be provided in news request body itself
-		if err := ns.UpdateByID(news); err != nil {
+		if err := ns.UpdateByID(&news); err != nil {
 			logger.Error("error updating news", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
