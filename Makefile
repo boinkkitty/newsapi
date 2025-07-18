@@ -3,6 +3,9 @@ GO_BIN := $(shell pwd)/.bin
 fmt::
 	@export PATH=$(GO_BIN):$$PATH && golangci-lint run --fix -v ./...
 
+generate::
+	@PATH=$(GO_BIN):$$PATH go generate ./...
+
 run::
 	go run ./cmd/api-server/main.go
 

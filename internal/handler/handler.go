@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -source=handler.go -destination=mocks/handler.go -package=mockshandler
+
 type NewsStorer interface {
 	Create(store.News) (store.News, error)
 	FindByID(uuid.UUID) (store.News, error)

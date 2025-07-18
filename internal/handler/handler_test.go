@@ -2,6 +2,8 @@ package handler_test
 
 import (
 	"errors"
+	mockshandler "github.com/boinkkitty/newsapi/internal/handler/mocks"
+	"go.uber.org/mock/gomock"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -17,13 +19,16 @@ func Test_PostNews(t *testing.T) {
 	testcases := []struct {
 		name           string
 		body           io.Reader
-		store          handler.NewsStorer
+		setup          func(tb testing.TB) handler.NewsStorer
 		expectedStatus int
 	}{
 		{
-			name:           "invalid request body json",
-			body:           strings.NewReader(`{`),
-			store:          mockNewsStore{},
+			name: "invalid request body json",
+			body: strings.NewReader(`{`),
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				return mockshandler.NewMockNewsStorer(gomock.NewController(t))
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -37,7 +42,10 @@ func Test_PostNews(t *testing.T) {
 				"created_at": "2024-07-16T15:04:05Z",
 				"source": "https://example.com/go-testing"
 			}`),
-			store:          mockNewsStore{isExpectedError: true},
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				return mockshandler.NewMockNewsStorer(gomock.NewController(t))
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -52,7 +60,12 @@ func Test_PostNews(t *testing.T) {
 				"source": "https://example.com",
 				"tags": ["go", "testing", "development"]
 			}`),
-			store:          mockNewsStore{isExpectedError: true},
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().Create(gomock.Any()).Return(nil, errors.New("db error"))
+				return ms
+			},
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
@@ -67,7 +80,12 @@ func Test_PostNews(t *testing.T) {
 				"source": "https://example.com",
 				"tags": ["go", "testing", "development"]
 			}`),
-			store:          mockNewsStore{},
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().Create(gomock.Any()).Return(nil, nil)
+				return ms
+			},
 			expectedStatus: http.StatusCreated,
 		},
 	}
@@ -79,7 +97,7 @@ func Test_PostNews(t *testing.T) {
 			response := httptest.NewRecorder()
 
 			// Post Method
-			handler.PostNews(tc.store)(response, request)
+			handler.PostNews(tc.setup(t))(response, request)
 
 			// Assert
 			assertStatusCode(t, response.Result().StatusCode, tc.expectedStatus)
