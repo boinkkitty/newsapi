@@ -3,6 +3,7 @@ package handler_test
 import (
 	"errors"
 	mockshandler "github.com/boinkkitty/newsapi/internal/handler/mocks"
+	"github.com/boinkkitty/newsapi/internal/news"
 	"go.uber.org/mock/gomock"
 	"io"
 	"net/http"
@@ -69,6 +70,26 @@ func Test_PostNews(t *testing.T) {
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
+			name: "db custom error",
+			body: strings.NewReader(`{
+				"id": "550e8400-e29b-41d4-a716-446655440000",
+				"author": "Jane Doe",
+				"title": "Go Makes Testing Easy",
+				"content": "some content",
+				"summary": "A short summary about Go testing",
+				"created_at": "2024-07-16T15:04:05Z",
+				"source": "https://example.com",
+				"tags": ["go", "testing", "development"]
+			}`),
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, news.NewCustomError(http.StatusBadRequest, errors.New("some error")))
+				return ms
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
 			name: "success",
 			body: strings.NewReader(`{
 				"id": "550e8400-e29b-41d4-a716-446655440000",
@@ -120,6 +141,16 @@ func Test_GetAllNews(t *testing.T) {
 				return ms
 			},
 			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name: "db custom error",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().FindAll(gomock.Any()).Return(nil, news.NewCustomError(http.StatusBadRequest, errors.New("some error")))
+				return ms
+			},
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "success",
@@ -259,6 +290,26 @@ func Test_UpdateNewsByID(t *testing.T) {
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
+			name: "db custom error",
+			body: strings.NewReader(`{
+				"id": "550e8400-e29b-41d4-a716-446655440000",
+				"author": "Jane Doe",
+				"title": "Go Makes Testing Easy",
+				"content": "some content",
+				"summary": "A short summary about Go testing",
+				"created_at": "2024-07-16T15:04:05Z",
+				"source": "https://example.com",
+				"tags": ["go", "testing", "development"]
+			}`),
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().UpdateByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(news.NewCustomError(http.StatusBadRequest, errors.New("some error")))
+				return ms
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
 			name: "success",
 			body: strings.NewReader(`{
 				"id": "550e8400-e29b-41d4-a716-446655440000",
@@ -321,6 +372,17 @@ func Test_DeleteNewsByID(t *testing.T) {
 			},
 			newsID:         uuid.NewString(),
 			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name: "db error",
+			setup: func(tb testing.TB) handler.NewsStorer {
+				tb.Helper()
+				ms := mockshandler.NewMockNewsStorer(gomock.NewController(t))
+				ms.EXPECT().DeleteByID(gomock.Any(), gomock.Any()).Return(news.NewCustomError(http.StatusBadRequest, errors.New("db error")))
+				return ms
+			},
+			newsID:         uuid.NewString(),
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "success",

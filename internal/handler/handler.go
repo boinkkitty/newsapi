@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/boinkkitty/newsapi/internal/news"
 	"net/http"
 
@@ -46,6 +47,11 @@ func PostNews(ns NewsStorer) http.HandlerFunc {
 		// Create news in db
 		if _, err := ns.Create(ctx, n); err != nil {
 			log.Error("error creating news", "error", err)
+			var dbErr *news.CustomError
+			if errors.As(err, &dbErr) {
+				w.WriteHeader(dbErr.HTTPStatus())
+				return
+			}
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -65,6 +71,11 @@ func GetAllNews(ns NewsStorer) http.HandlerFunc {
 		n, err := ns.FindAll(ctx)
 		if err != nil {
 			log.Error("error getting all news", "error", err)
+			var dbErr *news.CustomError
+			if errors.As(err, &dbErr) {
+				w.WriteHeader(dbErr.HTTPStatus())
+				return
+			}
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
@@ -97,7 +108,13 @@ func GetNewsByID(ns NewsStorer) http.HandlerFunc {
 		n, err := ns.FindByID(ctx, newsUUID)
 		if err != nil {
 			log.Error("news not found", "newsId", newsID)
+			var dbErr *news.CustomError
+			if errors.As(err, &dbErr) {
+				w.WriteHeader(dbErr.HTTPStatus())
+				return
+			}
 			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 
 		// Encode in response
@@ -135,6 +152,11 @@ func UpdateNewsByID(ns NewsStorer) http.HandlerFunc {
 		// Update By ID, will be provided in news request body itself
 		if err := ns.UpdateByID(ctx, n.ID, n); err != nil {
 			log.Error("error updating news", "error", err)
+			var dbErr *news.CustomError
+			if errors.As(err, &dbErr) {
+				w.WriteHeader(dbErr.HTTPStatus())
+				return
+			}
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -159,6 +181,11 @@ func DeleteNewsByID(ns NewsStorer) http.HandlerFunc {
 		// Delete By ID
 		if err := ns.DeleteByID(ctx, newsUUID); err != nil {
 			log.Error("error updating news", "error", err)
+			var dbErr *news.CustomError
+			if errors.As(err, &dbErr) {
+				w.WriteHeader(dbErr.HTTPStatus())
+				return
+			}
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
