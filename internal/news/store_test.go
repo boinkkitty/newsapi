@@ -42,13 +42,13 @@ func TestMain(m *testing.M) {
 func TestStore_Create(t *testing.T) {
 	testCases := []struct {
 		name               string
-		news               news.Record
+		news               *news.Record
 		expectedErr        string
 		expectedStatusCode int
 	}{
 		{
 			name: "missing author",
-			news: news.Record{
+			news: &news.Record{
 				Title:   "My News",
 				Summary: "My News",
 				Content: "My News",
@@ -60,7 +60,7 @@ func TestStore_Create(t *testing.T) {
 		},
 		{
 			name: "success",
-			news: news.Record{
+			news: &news.Record{
 				Author:  "John Doe",
 				Title:   "My News",
 				Summary: "My News",
@@ -98,14 +98,14 @@ func TestStore_FindByID(t *testing.T) {
 	testCases := []struct {
 		name               string
 		id                 uuid.UUID
-		expectedNews       news.Record
+		expectedNews       *news.Record
 		expectedStatusCode int
 		expectedErr        string
 	}{
 		{
 			name: "found",
 			id:   uuid.MustParse("17628bea-9d11-47f9-986e-16703a87e451"),
-			expectedNews: news.Record{
+			expectedNews: &news.Record{
 				Author:  "Alice Smith",
 				Title:   "PostgreSQL 16 Released",
 				Summary: "What's new in PostgreSQL 16?",
@@ -151,11 +151,11 @@ func TestStore_FindByID(t *testing.T) {
 func TestStore_FindAll(t *testing.T) {
 	testCases := []struct {
 		name         string
-		expectedNews []news.Record
+		expectedNews []*news.Record
 	}{
 		{
 			name: "found all",
-			expectedNews: []news.Record{
+			expectedNews: []*news.Record{
 				{
 					Author:  "Alice Smith",
 					Title:   "PostgreSQL 16 Released",
@@ -260,7 +260,7 @@ func TestStore_UpdatedByID(t *testing.T) {
 	}
 }
 
-func assertOnNews(tb testing.TB, expected, got news.Record) {
+func assertOnNews(tb testing.TB, expected, got *news.Record) {
 	tb.Helper()
 
 	assert.Equal(tb, expected.Author, got.Author)

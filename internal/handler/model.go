@@ -3,10 +3,10 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"github.com/boinkkitty/newsapi/internal/news"
 	"net/url"
 	"time"
 
-	"github.com/boinkkitty/newsapi/internal/store"
 	"github.com/google/uuid"
 )
 
@@ -21,7 +21,7 @@ type NewsPostReqBody struct {
 	Tags      []string  `json:"tags"`
 }
 
-func (n NewsPostReqBody) Validate() (news store.News, errs error) {
+func (n NewsPostReqBody) Validate() (record *news.Record, errs error) {
 	if n.Author == "" {
 		errs = errors.Join(errs, fmt.Errorf("author is empty: %s", n.Author))
 	}
@@ -41,7 +41,7 @@ func (n NewsPostReqBody) Validate() (news store.News, errs error) {
 	if n.Source == "" {
 		errs = errors.Join(errs, fmt.Errorf("source is empty: %s", n.Source))
 	}
-	url, err := url.Parse(n.Source)
+	parsedURL, err := url.Parse(n.Source)
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
@@ -50,21 +50,21 @@ func (n NewsPostReqBody) Validate() (news store.News, errs error) {
 	}
 
 	if errs != nil {
-		return news, errs
+		return record, errs
 	}
 
-	return store.News{
+	return &news.Record{
 		ID:        n.ID,
 		Author:    n.Author,
 		Title:     n.Title,
 		Content:   n.Content,
 		Summary:   n.Summary,
 		CreatedAt: t,
-		Source:    url,
+		Source:    parsedURL.String(),
 		Tags:      n.Tags,
 	}, nil
 }
 
 type AllNewsResponse struct {
-	News []*store.News `json:"news"`
+	News []*news.Record `json:"news"`
 }

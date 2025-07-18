@@ -1,12 +1,12 @@
 package handler_test
 
 import (
+	"github.com/boinkkitty/newsapi/internal/news"
 	"net/url"
 	"testing"
 	"time"
 
 	"github.com/boinkkitty/newsapi/internal/handler"
-	"github.com/boinkkitty/newsapi/internal/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +14,7 @@ import (
 func TestNewsPostReqBody_Validate(t *testing.T) {
 	type expectations struct {
 		err  string
-		news store.News
+		news *news.Record
 	}
 	testCases := []struct {
 		name         string
@@ -108,7 +108,7 @@ func TestNewsPostReqBody_Validate(t *testing.T) {
 				Tags:      []string{"go", "news"},
 			},
 			expectations: expectations{
-				news: store.News{
+				news: &news.Record{
 					Author:  "Alice",
 					Title:   "Some Title",
 					Content: "Some Content",
@@ -135,9 +135,9 @@ func TestNewsPostReqBody_Validate(t *testing.T) {
 				tc.expectations.news.CreatedAt = parseTime
 
 				// Check url
-				parseSource, parseSourceErr := url.Parse(tc.req.Source)
+				parsedSource, parseSourceErr := url.Parse(tc.req.Source)
 				require.NoError(t, parseSourceErr)
-				tc.expectations.news.Source = parseSource
+				tc.expectations.news.Source = parsedSource.String()
 				assert.Equal(t, tc.expectations.news, news)
 			}
 		})
