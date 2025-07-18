@@ -2,14 +2,15 @@ package handler_test
 
 import (
 	"errors"
-	"github.com/boinkkitty/newsapi/internal/handler"
-	"github.com/boinkkitty/newsapi/internal/store"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/boinkkitty/newsapi/internal/handler"
+	"github.com/boinkkitty/newsapi/internal/store"
+	"github.com/google/uuid"
 )
 
 func Test_PostNews(t *testing.T) {
@@ -107,7 +108,7 @@ func Test_GetAllNews(t *testing.T) {
 	// Iterate through test cases
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, "/", nil)
+			request := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 			response := httptest.NewRecorder()
 
 			// Post Method
@@ -149,7 +150,7 @@ func Test_GetNewsByID(t *testing.T) {
 	// Iterate through test cases
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, "/", nil)
+			request := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 			response := httptest.NewRecorder()
 			request.SetPathValue("news_id", tc.newsID)
 
@@ -267,7 +268,7 @@ func Test_DeleteNewsByID(t *testing.T) {
 	// Iterate through test cases
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodDelete, "/", nil)
+			request := httptest.NewRequest(http.MethodDelete, "/", http.NoBody)
 			response := httptest.NewRecorder()
 			// Set Id path value
 			request.SetPathValue("news_id", tc.newsID)

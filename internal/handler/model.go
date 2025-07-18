@@ -3,10 +3,11 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"github.com/boinkkitty/newsapi/internal/store"
-	"github.com/google/uuid"
 	"net/url"
 	"time"
+
+	"github.com/boinkkitty/newsapi/internal/store"
+	"github.com/google/uuid"
 )
 
 type NewsPostReqBody struct {

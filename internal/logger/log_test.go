@@ -2,10 +2,11 @@ package logger_test
 
 import (
 	"context"
-	"github.com/boinkkitty/newsapi/internal/logger"
 	"log/slog"
 	"os"
 	"testing"
+
+	"github.com/boinkkitty/newsapi/internal/logger"
 )
 
 func Test_ContextWithLogger(t *testing.T) {

@@ -2,10 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/boinkkitty/newsapi/internal/logger"
 	"github.com/boinkkitty/newsapi/internal/store"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 type NewsStorer interface {
@@ -79,7 +80,6 @@ func GetNewsByID(ns NewsStorer) http.HandlerFunc {
 		// Reference to router path
 		newsID := r.PathValue("news_id")
 		newsUUID, err := uuid.Parse(newsID)
-
 		// Error parsing ID to UUID
 		if err != nil {
 			logger.Error("news id not a valid uuid", "newsId", newsID, "error", err)
@@ -141,7 +141,6 @@ func DeleteNewsByID(ns NewsStorer) http.HandlerFunc {
 		// Reference to router path
 		newsID := r.PathValue("news_id")
 		newsUUID, err := uuid.Parse(newsID)
-
 		// Error parsing ID to UUID
 		if err != nil {
 			logger.Error("news id not a valid uuid", "newsId", newsID, "error", err)

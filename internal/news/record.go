@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/google/uuid"
-	"github.com/uptrace/bun"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/uptrace/bun"
 )
 
 type Record struct {
@@ -47,7 +48,6 @@ func (s Store) FindByID(ctx context.Context, id uuid.UUID) (news Record, err err
 func (s Store) FindAll(ctx context.Context) (news []Record, err error) {
 	err = s.db.NewSelect().Model(&news).Scan(ctx, &news)
 	if err != nil {
-
 	}
 	return news, nil
 }

@@ -3,6 +3,12 @@ package news_test
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/boinkkitty/newsapi/internal/news"
 	"github.com/boinkkitty/newsapi/internal/postgres"
 	"github.com/docker/go-connections/nat"
@@ -12,11 +18,6 @@ import (
 	pgtc "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/uptrace/bun"
-	"net/http"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 var db *bun.DB
@@ -294,7 +295,6 @@ func createTestContainer(ctx context.Context) (ctr *pgtc.PostgresContainer, err 
 				WithStartupTimeout(15*time.Second),
 		),
 	)
-
 	if err != nil {
 		return ctr, fmt.Errorf("run container: %w", err)
 	}

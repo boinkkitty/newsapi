@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/boinkkitty/newsapi/internal/logger"
-	"github.com/boinkkitty/newsapi/internal/router"
-	"github.com/boinkkitty/newsapi/internal/store"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/boinkkitty/newsapi/internal/logger"
+	"github.com/boinkkitty/newsapi/internal/router"
+	"github.com/boinkkitty/newsapi/internal/store"
 )
 
 func main() {

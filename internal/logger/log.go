@@ -31,7 +31,7 @@ func FromContext(ctx context.Context) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true}))
 }
 
-// Before Middleware
+// Before Middleware.
 func AddLoggerMid(logger *slog.Logger, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Inject logger into request context

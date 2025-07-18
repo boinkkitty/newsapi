@@ -2,8 +2,9 @@ package store
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 type Store struct {

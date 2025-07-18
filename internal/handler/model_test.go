@@ -1,13 +1,14 @@
 package handler_test
 
 import (
+	"net/url"
+	"testing"
+	"time"
+
 	"github.com/boinkkitty/newsapi/internal/handler"
 	"github.com/boinkkitty/newsapi/internal/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/url"
-	"testing"
-	"time"
 )
 
 func TestNewsPostReqBody_Validate(t *testing.T) {

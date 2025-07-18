@@ -1,9 +1,10 @@
 package store
 
 import (
-	"github.com/google/uuid"
 	"net/url"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type News struct {

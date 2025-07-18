@@ -1,8 +1,9 @@
 package router
 
 import (
-	"github.com/boinkkitty/newsapi/internal/handler"
 	"net/http"
+
+	"github.com/boinkkitty/newsapi/internal/handler"
 )
 
 func NewRouter(ns handler.NewsStorer) *http.ServeMux {
