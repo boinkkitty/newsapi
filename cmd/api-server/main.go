@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"github.com/boinkkitty/newsapi/internal/news"
 	"github.com/boinkkitty/newsapi/internal/postgres"
+	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/boinkkitty/newsapi/internal/logger"
@@ -40,7 +45,38 @@ func main() {
 		Handler:           wrappedRouter,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Error("failed to start server", "error", err)
+	errGrp, errGrpCtx := errgroup.WithContext(context.Background())
+	errGrp.Go(func() error {
+		if err := server.ListenAndServe(); err != nil {
+			log.Error("failed to start server", "error", err)
+			return fmt.Errorf("could not start server: %w", err)
+		}
+		return nil
+	})
+
+	errGrp.Go(func() error {
+		sigch := make(chan os.Signal, 1)
+		signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+		select {
+		case sig := <-sigch:
+			log.Info("received signal", "signal", sig)
+		case <-errGrpCtx.Done():
+
+		}
+
+		ctxWithTimeout, cancelFn := context.WithTimeout(errGrpCtx, 5*time.Second)
+		defer cancelFn()
+
+		log.Info("initiate graceful shutdown")
+
+		if err := server.Shutdown(ctxWithTimeout); err != nil {
+			return fmt.Errorf("error graceful shutdown: %w", err)
+		}
+
+		return nil
+	})
+
+	if err := errGrp.Wait(); err != nil {
+		log.Error("error running", "error", err)
 	}
 }
