@@ -3,28 +3,42 @@ package main
 import (
 	"fmt"
 	"github.com/boinkkitty/newsapi/internal/migration"
+	"github.com/boinkkitty/newsapi/internal/postgres"
+	"github.com/uptrace/bun/extra/bundebug"
 	"github.com/uptrace/bun/migrate"
 	"github.com/urfave/cli/v2"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 )
 
 func main() {
-	//db, err := postgres.NewDB(&postgres.Config{})
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//db.AddQueryHook(bundebug.NewQueryHook(
-	//	bundebug.WithEnabled(false),
-	//	bundebug.FromEnv(),
-	//))
+	db, err := postgres.NewDB(&postgres.Config{
+		Host:     os.Getenv("DATABASE_HOST"),
+		DBName:   os.Getenv("DATABASE_NAME"),
+		Password: os.Getenv("DATABASE_PASSWORD"),
+		User:     os.Getenv("DATABASE_USER"),
+		Port:     os.Getenv("DATABASE_PORT"),
+		SSLMode:  "disable",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db.AddQueryHook(bundebug.NewQueryHook(
+		bundebug.WithEnabled(false),
+		bundebug.FromEnv(),
+	))
+	l := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true}))
 
 	app := &cli.App{
 		Name: "migrate",
 		Commands: []*cli.Command{
-			newMigrationCommand(migrate.NewMigrator(nil, migration.New(), migrate.WithMarkAppliedOnSuccess(true))),
+			newMigrationCommand(
+				migrate.NewMigrator(db, migration.New(), migrate.WithMarkAppliedOnSuccess(true)),
+				l,
+			),
 		},
 	}
 
@@ -33,7 +47,7 @@ func main() {
 	}
 }
 
-func newMigrationCommand(m *migrate.Migrator) *cli.Command {
+func newMigrationCommand(m *migrate.Migrator, l *slog.Logger) *cli.Command {
 	return &cli.Command{
 		Name:  "migrate",
 		Usage: "database migrations",
@@ -50,20 +64,19 @@ func newMigrationCommand(m *migrate.Migrator) *cli.Command {
 				Usage: "run migrations up",
 				Action: func(ctx *cli.Context) error {
 					if err := m.Lock(ctx.Context); err != nil {
-						return err
+						return fmt.Errorf("lock: %w", err)
 					}
 					defer m.Unlock(ctx.Context)
 
 					group, err := m.Migrate(ctx.Context)
 					if err != nil {
-						return err
+						return fmt.Errorf("migrate: %w", err)
 					}
-
 					if group.IsZero() {
-						fmt.Println("no migrations available, database is up to date\n")
+						l.Info("there are no new migrations to run (database is up to date)")
 						return nil
 					}
-					fmt.Printf("migrated to %s\n", group)
+					l.Info("migrated to ", slog.Any("grous", group))
 					return nil
 				},
 			},
@@ -72,20 +85,19 @@ func newMigrationCommand(m *migrate.Migrator) *cli.Command {
 				Usage: "run migrations down",
 				Action: func(ctx *cli.Context) error {
 					if err := m.Lock(ctx.Context); err != nil {
-						return err
+						return fmt.Errorf("lock migration: %w", err)
 					}
 					defer m.Unlock(ctx.Context)
 
 					group, err := m.Rollback(ctx.Context)
 					if err != nil {
-						return err
+						return fmt.Errorf("rollback: %w", err)
 					}
-
 					if group.IsZero() {
-						fmt.Println("no groups to rollback\n")
+						l.Info("there are no groups to rollback")
 						return nil
 					}
-					fmt.Printf("rolled back to %s\n", group)
+					l.Info("rolled back to ", slog.Any("grous", group))
 					return nil
 				},
 			},
@@ -96,25 +108,27 @@ func newMigrationCommand(m *migrate.Migrator) *cli.Command {
 					name := strings.Join(ctx.Args().Slice(), "_")
 					files, err := m.CreateTxSQLMigrations(ctx.Context, name)
 					if err != nil {
-						return err
+						return fmt.Errorf("create migration: %w", err)
 					}
 					for _, f := range files {
-						fmt.Printf("created migrations %s (%s)\n", f.Name, f.Path)
+						l.Info("created migration %s (%s)", f.Name, f.Path)
 					}
 					return nil
 				},
 			},
 			{
 				Name:  "status",
-				Usage: "show status of migrations",
+				Usage: "print migration status",
 				Action: func(ctx *cli.Context) error {
 					ms, err := m.MigrationsWithStatus(ctx.Context)
 					if err != nil {
-						return err
+						return fmt.Errorf("migration status: %w", err)
 					}
-					fmt.Printf("migrations: %s\n", ms)
-					fmt.Printf("unapplied migrations: %s\n", ms.Unapplied())
-					fmt.Printf("last migration group: %s\n", ms.LastGroup())
+					var buf strings.Builder
+					buf.WriteString(fmt.Sprintf("migrations: %s - ", ms))
+					buf.WriteString(fmt.Sprintf("unapplied migrations: %s - ", ms.Unapplied()))
+					buf.WriteString(fmt.Sprintf("last migration group: %s", ms.LastGroup()))
+					l.Info(buf.String())
 					return nil
 				},
 			},

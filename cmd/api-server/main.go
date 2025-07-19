@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/boinkkitty/newsapi/internal/logger"
 	"github.com/boinkkitty/newsapi/internal/router"
@@ -14,7 +15,14 @@ import (
 func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true}))
 
-	db, err := postgres.NewDB(&postgres.Config{})
+	db, err := postgres.NewDB(&postgres.Config{
+		Host:     os.Getenv("DATABASE_HOST"),
+		DBName:   os.Getenv("DATABASE_NAME"),
+		Password: os.Getenv("DATABASE_PASSWORD"),
+		User:     os.Getenv("DATABASE_USER"),
+		Port:     os.Getenv("DATABASE_PORT"),
+		SSLMode:  "disable",
+	})
 	if err != nil {
 		log.Error("db error", "err", err)
 		os.Exit(1)
@@ -24,9 +32,15 @@ func main() {
 	r := router.NewRouter(newsStore)
 	wrappedRouter := logger.AddLoggerMid(log, logger.LoggerMid(r))
 
-	log.Info("server starting on port 5002")
+	log.Info("server starting on port 8080")
 
-	if err := http.ListenAndServe(":5002", wrappedRouter); err != nil {
-		log.Error("Failed to start server", "error", err)
+	server := &http.Server{
+		Addr:              ":8080",
+		ReadHeaderTimeout: 3 * time.Second,
+		Handler:           wrappedRouter,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		log.Error("failed to start server", "error", err)
 	}
 }
