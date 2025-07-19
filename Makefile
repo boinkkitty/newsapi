@@ -15,6 +15,9 @@ tidy::
 test::
 	go test ./...
 
+test-integration::
+	go test -timeout 30s -tags integration ./test/...
+
 tools::
 	mkdir -p $(GO_BIN)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GO_BIN) v1.64.5
